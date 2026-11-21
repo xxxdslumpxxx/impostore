@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e17" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Impostore" />
+  <title>Impostore — Party Game</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Ambient background glow -->
+    <div class="bg-orb orb-1" aria-hidden="true"></div>
+    <div class="bg-orb orb-2" aria-hidden="true"></div>
+
+    <!-- ==================== SCREEN 1: SETUP ==================== -->
+    <section id="screen-setup" class="screen active" aria-label="Configurazione partita">
+      <header class="brand-header">
+        <div class="brand-badge">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">IMPOSTORE</h1>
+          <p id="word-pool-meta" class="brand-sub">Caricamento parole...</p>
+        </div>
+      </header>
+
+      <div class="screen-body">
+        <!-- Add player form -->
+        <div class="card-panel">
+          <div class="panel-header">
+            <span class="panel-label">Giocatori</span>
+            <span id="player-count-badge" class="count-pill">0</span>
+          </div>
+
+          <form id="add-player-form" class="input-row" autocomplete="off">
+            <input
+              id="player-name-input"
+              type="text"
+              placeholder="Nome giocatore..."
+              maxlength="22"
+              enterkeyhint="done"
+              aria-label="Nome giocatore"
+            />
+            <button type="submit" class="btn-icon-add" aria-label="Aggiungi giocatore">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </button>
+          </form>
+
+          <ul id="player-list" class="player-list" aria-live="polite"></ul>
+
+          <p id="setup-hint" class="helper-text">
+            Aggiungi almeno <strong>3 giocatori</strong> per iniziare.
+          </p>
+        </div>
+
+        <!-- Impostor count selector -->
+        <div class="card-panel settings-row">
+          <div>
+            <div class="panel-label">Impostori</div>
+            <div class="setting-desc">Quanti giocatori ricevono solo l'indizio</div>
+          </div>
+          <div class="stepper">
+            <button id="btn-imp-minus" type="button" class="stepper-btn" aria-label="Riduci impostori">−</button>
+            <span id="impostor-count-display" class="stepper-val">1</span>
+            <button id="btn-imp-plus" type="button" class="stepper-btn" aria-label="Aumenta impostori">+</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="screen-footer">
+        <button id="btn-start-deal" type="button" class="btn-primary" disabled>
+          <span>Distribuisci Ruoli</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </footer>
+    </section>
+
+    <!-- ==================== SCREEN 2: REVEAL ==================== -->
+    <section id="screen-reveal" class="screen" aria-label="Rivelazione ruoli">
+      <header class="top-bar">
+        <button id="btn-abort-reveal" type="button" class="btn-ghost-sm" aria-label="Torna al menu">
+          ← Esci
+        </button>
+        <div class="progress-wrap">
+          <span id="reveal-progress-text" class="progress-label">1 / 4</span>
+          <div class="progress-track">
+            <div id="reveal-progress-bar" class="progress-fill"></div>
+          </div>
+        </div>
+      </header>
+
+      <div class="reveal-body">
+        <div class="pass-to-box">
+          <span class="pass-label">Passa il telefono a</span>
+          <div class="player-spotlight">
+            <span id="reveal-avatar" class="avatar-lg">M</span>
+            <h2 id="reveal-player-name" class="player-spotlight-name">Marco</h2>
+          </div>
+        </div>
+
+        <!-- Hold-to-reveal interactive card -->
+        <div
+          id="secret-card"
+          class="secret-card"
+          role="button"
+          tabindex="0"
+          aria-label="Tieni premuto per vedere la tua carta segreta"
+        >
+          <!-- Covered Face -->
+          <div class="card-face card-covered">
+            <div class="hold-ring">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <div class="covered-title">Tieni premuto</div>
+            <div class="covered-sub">Rilascia per nascondere subito</div>
+          </div>
+
+          <!-- Revealed Face -->
+          <div class="card-face card-revealed">
+            <span id="card-role-badge" class="role-badge">CIVILE</span>
+            <span id="card-content-label" class="card-content-label">La parola segreta è</span>
+            <div id="card-secret-value" class="card-secret-value">Pizza</div>
+            <p id="card-role-tip" class="card-role-tip">Dai un indizio senza essere troppo ovvio.</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="screen-footer">
+        <button id="btn-next-player" type="button" class="btn-primary" disabled>
+          <span id="btn-next-player-label">Fatto, passa al prossimo</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </footer>
+    </section>
+
+    <!-- ==================== SCREEN 3: READY -> INIZIO ==================== -->
+    <section id="screen-ready" class="screen" aria-label="Pronti a iniziare">
+      <div class="ready-body">
+        <div class="ready-icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" x2="12" y1="19" y2="22"/>
+          </svg>
+        </div>
+        <h2 class="ready-title">Tutti pronti!</h2>
+        <p class="ready-desc">
+          Ogni giocatore conosce il proprio ruolo.<br />
+          Premi <strong>Inizio</strong> per scoprire chi comincia a parlare.
+        </p>
+
+        <button id="btn-inizio" type="button" class="btn-inizio">
+          <span>INIZIO</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== SCREEN 4: PLAY & REVEAL SOLUTION ==================== -->
+    <section id="screen-play" class="screen" aria-label="Partita in corso">
+      <header class="top-bar">
+        <span class="live-pill"><span class="live-dot"></span> Partita in corso</span>
+        <button id="btn-timer-toggle" type="button" class="timer-pill" aria-label="Metti in pausa o riprendi cronometro">
+          <span id="timer-display">00:00</span>
+          <span id="timer-icon" aria-hidden="true">⏸</span>
+        </button>
+      </header>
+
+      <div class="play-body">
+        <!-- Starter speaker announcement -->
+        <div id="starter-card" class="starter-card">
+          <span class="starter-kicker">🎙️ Inizia a parlare</span>
+          <div class="starter-player-row">
+            <span id="starter-avatar" class="avatar-xl">?</span>
+            <h2 id="starter-name" class="starter-name">...</h2>
+          </div>
+          <p id="starter-sub" class="starter-sub">Estrazione in corso...</p>
+        </div>
+
+        <!-- Solution Reveal Panel (hidden until confirmed) -->
+        <div id="solution-card" class="solution-card hidden" aria-live="polite">
+          <div class="solution-section">
+            <span class="solution-label">Impostore</span>
+            <div id="solution-impostors" class="solution-impostors"></div>
+          </div>
+          <div class="solution-divider"></div>
+          <div class="solution-grid">
+            <div class="solution-box civilian-box">
+              <span class="solution-label">Parola dei Civili</span>
+              <strong id="solution-word" class="solution-value">—</strong>
+            </div>
+            <div class="solution-box impostor-box">
+              <span class="solution-label">Indizio Impostore</span>
+              <strong id="solution-hint" class="solution-value">—</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="screen-footer play-footer">
+        <button id="btn-reveal-solution" type="button" class="btn-danger-outline">
+          Svela Impostore e Parola
+        </button>
+        <div id="post-game-actions" class="action-split hidden">
+          <button id="btn-edit-players" type="button" class="btn-secondary">
+            Giocatori
+          </button>
+          <button id="btn-new-round" type="button" class="btn-primary">
+            Nuova Partita
+          </button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

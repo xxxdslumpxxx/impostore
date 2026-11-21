@@ -1,0 +1,19 @@
+{
+  "name": "Impostore - Party Game",
+  "short_name": "Impostore",
+  "description": "Il gioco dell'impostore per smartphone: passa il telefono, scopri la parola o l'indizio e trova l'impostore!",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0e17",
+  "theme_color": "#0b0e17",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
