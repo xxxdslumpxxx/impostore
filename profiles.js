@@ -79,6 +79,9 @@ export function loginProfile(rawName) {
     players: legacy ? legacy.players : [],
     impostorCount: 1,
     usedWordIndices: legacy ? legacy.usedWordIndices : [],
+    impostorBag: [],
+    lastImpostors: [],
+    lastStarter: '',
     lastUsedAt: now
   };
 
@@ -96,6 +99,9 @@ export function updateProfile(key, partial) {
   if (Array.isArray(partial.players)) allowed.players = partial.players;
   if (typeof partial.impostorCount === 'number') allowed.impostorCount = partial.impostorCount;
   if (Array.isArray(partial.usedWordIndices)) allowed.usedWordIndices = partial.usedWordIndices;
+  if (Array.isArray(partial.impostorBag)) allowed.impostorBag = partial.impostorBag;
+  if (Array.isArray(partial.lastImpostors)) allowed.lastImpostors = partial.lastImpostors;
+  if (typeof partial.lastStarter === 'string') allowed.lastStarter = partial.lastStarter;
 
   store[key] = {
     ...store[key],

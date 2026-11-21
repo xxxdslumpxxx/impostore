@@ -20,6 +20,9 @@ const state = {
   players: [],
   impostorCount: 1,
   usedWordIndices: [],
+  impostorBag: [],
+  lastImpostors: [],
+  lastStarter: '',
   currentWord: '',
   currentHint: '',
   assignments: [], // [{ name, isImpostor }]
@@ -97,11 +100,25 @@ const elBtnNewRound = document.getElementById('btn-new-round');
 function randomInt(max) {
   if (max <= 1) return 0;
   if (window.crypto && window.crypto.getRandomValues) {
+    const limit = Math.floor(0x100000000 / max) * max;
     const arr = new Uint32Array(1);
-    window.crypto.getRandomValues(arr);
-    return arr[0] % max;
+    let val;
+    do {
+      window.crypto.getRandomValues(arr);
+      val = arr[0];
+    } while (val >= limit);
+    return val % max;
   }
   return Math.floor(Math.random() * max);
+}
+
+function shuffleArray(items) {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 function vibrate(pattern) {
@@ -131,7 +148,10 @@ function persistActiveProfile() {
   updateProfile(state.activeProfileKey, {
     players: state.players,
     impostorCount: state.impostorCount,
-    usedWordIndices: state.usedWordIndices
+    usedWordIndices: state.usedWordIndices,
+    impostorBag: state.impostorBag,
+    lastImpostors: state.lastImpostors,
+    lastStarter: state.lastStarter
   });
 }
 
@@ -170,6 +190,9 @@ function enterProfile(rawName) {
   state.players = [...(profile.players || [])];
   state.impostorCount = profile.impostorCount || 1;
   state.usedWordIndices = [...(profile.usedWordIndices || [])];
+  state.impostorBag = [...(profile.impostorBag || [])];
+  state.lastImpostors = [...(profile.lastImpostors || [])];
+  state.lastStarter = profile.lastStarter || '';
 
   elActiveProfileAvatar.textContent = getInitial(profile.name);
   elActiveProfileAvatar.style.background = getAvatarColor(profile.name);
@@ -347,6 +370,49 @@ elBtnImpPlus.addEventListener('click', () => {
 });
 
 // ==================== GAME DEALING & REVEAL ====================
+function pickImpostorSet(players, count) {
+  const playerSet = new Set(players);
+  const lastSet = new Set(state.lastImpostors);
+  const chosen = new Set();
+
+  // Keep only current players in the fair-rotation bag
+  let bag = state.impostorBag.filter((name) => playerSet.has(name));
+
+  // Helper to refill bag with all current players (shuffled)
+  function refillBag() {
+    bag = shuffleArray(players);
+  }
+
+  while (chosen.size < count) {
+    if (bag.length === 0) {
+      refillBag();
+    }
+
+    // Prefer someone from the bag who wasn't impostor in the previous round
+    let candidateIdx = bag.findIndex((name) => !chosen.has(name) && !lastSet.has(name));
+
+    // If the bag only contains previous impostors, check if we can refill first
+    if (candidateIdx === -1) {
+      const othersAvailable = players.filter((name) => !chosen.has(name) && !lastSet.has(name));
+      if (othersAvailable.length > 0) {
+        refillBag();
+        candidateIdx = bag.findIndex((name) => !chosen.has(name) && !lastSet.has(name));
+      } else {
+        candidateIdx = bag.findIndex((name) => !chosen.has(name));
+      }
+    }
+
+    if (candidateIdx === -1) break;
+    const [picked] = bag.splice(candidateIdx, 1);
+    chosen.add(picked);
+  }
+
+  state.impostorBag = bag;
+  state.lastImpostors = [...chosen];
+  persistActiveProfile();
+  return chosen;
+}
+
 function startNewRound() {
   stopTimer();
   clearConfirmReveal();
@@ -355,16 +421,11 @@ function startNewRound() {
   state.currentWord = word;
   state.currentHint = hint;
 
-  const indices = state.players.map((_, i) => i);
-  const impostorSet = new Set();
-  for (let i = 0; i < state.impostorCount; i++) {
-    const pickPos = randomInt(indices.length);
-    impostorSet.add(indices.splice(pickPos, 1)[0]);
-  }
+  const impostorNames = pickImpostorSet(state.players, state.impostorCount);
 
-  state.assignments = state.players.map((name, idx) => ({
+  state.assignments = state.players.map((name) => ({
     name,
-    isImpostor: impostorSet.has(idx)
+    isImpostor: impostorNames.has(name)
   }));
 
   state.revealIndex = 0;
@@ -454,7 +515,15 @@ elBtnAbortReveal.addEventListener('click', () => {
 
 // ==================== INIZIO -> STARTER ROULETTE ====================
 elBtnInizio.addEventListener('click', () => {
-  state.starterIndex = randomInt(state.assignments.length);
+  const candidates = state.assignments
+    .map((a, i) => ({ name: a.name, i }))
+    .filter((x) => x.name !== state.lastStarter);
+  const pool = candidates.length > 0 ? candidates : state.assignments.map((a, i) => ({ name: a.name, i }));
+  const picked = pool[randomInt(pool.length)];
+  state.starterIndex = picked.i;
+  state.lastStarter = picked.name;
+  persistActiveProfile();
+
   elSolutionCard.classList.add('hidden');
   elPostGameActions.classList.add('hidden');
   elBtnRevealSolution.classList.remove('hidden');
