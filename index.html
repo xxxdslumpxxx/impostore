@@ -19,19 +19,75 @@
     <div class="bg-orb orb-1" aria-hidden="true"></div>
     <div class="bg-orb orb-2" aria-hidden="true"></div>
 
-    <!-- ==================== SCREEN 1: SETUP ==================== -->
-    <section id="screen-setup" class="screen active" aria-label="Configurazione partita">
-      <header class="brand-header">
-        <div class="brand-badge">
+    <!-- ==================== SCREEN 0: LOGIN / PROFILO ==================== -->
+    <section id="screen-login" class="screen active" aria-label="Accesso profilo">
+      <div class="login-hero">
+        <div class="brand-badge brand-badge-lg">
           <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
             <circle cx="12" cy="12" r="3"/>
           </svg>
         </div>
-        <div>
-          <h1 class="brand-title">IMPOSTORE</h1>
-          <p id="word-pool-meta" class="brand-sub">Caricamento parole...</p>
+        <h1 class="brand-title login-title">IMPOSTORE</h1>
+        <p class="login-subtitle">
+          Inserisci il tuo nome per ritrovare i tuoi giocatori e le parole già giocate.
+        </p>
+      </div>
+
+      <div class="screen-body">
+        <div class="card-panel">
+          <div class="panel-header">
+            <span class="panel-label">Chi sta giocando?</span>
+          </div>
+
+          <form id="login-form" class="login-form" autocomplete="off">
+            <input
+              id="profile-name-input"
+              type="text"
+              placeholder="Es. Marco, Gruppo Mare..."
+              maxlength="24"
+              enterkeyhint="go"
+              aria-label="Il tuo nome o nome del gruppo"
+            />
+            <button type="submit" class="btn-primary">
+              <span>Entra</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14M13 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </form>
         </div>
+
+        <div id="recent-profiles-panel" class="card-panel hidden">
+          <div class="panel-header">
+            <span class="panel-label">Profili salvati su questo telefono</span>
+            <span id="profile-count-badge" class="count-pill">0</span>
+          </div>
+          <ul id="profile-list" class="profile-list" aria-live="polite"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SCREEN 1: SETUP ==================== -->
+    <section id="screen-setup" class="screen" aria-label="Configurazione partita">
+      <header class="brand-header brand-header-split">
+        <div class="brand-left">
+          <div class="brand-badge">
+            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="brand-title">IMPOSTORE</h1>
+            <p id="word-pool-meta" class="brand-sub">Caricamento parole...</p>
+          </div>
+        </div>
+        <button id="btn-switch-profile" type="button" class="profile-pill" aria-label="Cambia profilo">
+          <span id="active-profile-avatar" class="avatar-xs">?</span>
+          <span id="active-profile-name" class="profile-pill-name">Profilo</span>
+          <span class="profile-pill-switch" aria-hidden="true">⇄</span>
+        </button>
       </header>
 
       <div class="screen-body">

@@ -940,3 +940,175 @@ body {
   grid-template-columns: 1fr 1.6fr;
   gap: 10px;
 }
+
+/* ==================== SCREEN 0: LOGIN / PROFILO ==================== */
+.login-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 18px 8px 20px;
+}
+
+.brand-badge-lg {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+}
+
+.brand-badge-lg .brand-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.login-title {
+  font-size: 1.75rem;
+}
+
+.login-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  max-width: 300px;
+  line-height: 1.45;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-form input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-size: 1.02rem;
+  padding: 14px 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.login-form input:focus {
+  border-color: var(--accent);
+}
+
+.login-form input::placeholder {
+  color: #6b7694;
+}
+
+.profile-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 6px 8px;
+  transition: border-color 0.18s, background 0.18s;
+}
+
+.profile-item-btn {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 4px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-item-btn:active {
+  opacity: 0.78;
+}
+
+.profile-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-meta-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-meta-sub {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Header with profile switcher pill */
+.brand-header-split {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.brand-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.profile-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 148px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 10px 5px 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.12s;
+}
+
+.profile-pill:active {
+  transform: scale(0.95);
+}
+
+.avatar-xs {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.profile-pill-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-pill-switch {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

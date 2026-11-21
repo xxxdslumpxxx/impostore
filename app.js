@@ -1,8 +1,10 @@
 import { WORDS } from './words.js';
-
-// ==================== STORAGE KEYS ====================
-const STORAGE_PLAYERS = 'impostore_players_v1';
-const STORAGE_USED_WORDS = 'impostore_used_words_v1';
+import {
+  listProfiles,
+  loginProfile,
+  updateProfile,
+  deleteProfile
+} from './profiles.js';
 
 // ==================== AVATAR PALETTE ====================
 const AVATAR_COLORS = [
@@ -13,9 +15,11 @@ const AVATAR_COLORS = [
 
 // ==================== STATE ====================
 const state = {
-  players: loadPlayers(),
+  activeProfileKey: null,
+  activeProfileName: '',
+  players: [],
   impostorCount: 1,
-  usedWordIndices: loadUsedWords(),
+  usedWordIndices: [],
   currentWord: '',
   currentHint: '',
   assignments: [], // [{ name, isImpostor }]
@@ -31,11 +35,22 @@ const state = {
 
 // ==================== DOM ELEMENTS ====================
 const screens = {
+  login: document.getElementById('screen-login'),
   setup: document.getElementById('screen-setup'),
   reveal: document.getElementById('screen-reveal'),
   ready: document.getElementById('screen-ready'),
   play: document.getElementById('screen-play')
 };
+
+const elLoginForm = document.getElementById('login-form');
+const elProfileNameInput = document.getElementById('profile-name-input');
+const elRecentProfilesPanel = document.getElementById('recent-profiles-panel');
+const elProfileCountBadge = document.getElementById('profile-count-badge');
+const elProfileList = document.getElementById('profile-list');
+
+const elBtnSwitchProfile = document.getElementById('btn-switch-profile');
+const elActiveProfileAvatar = document.getElementById('active-profile-avatar');
+const elActiveProfileName = document.getElementById('active-profile-name');
 
 const elWordPoolMeta = document.getElementById('word-pool-meta');
 const elPlayerCountBadge = document.getElementById('player-count-badge');
@@ -111,42 +126,13 @@ function getInitial(name) {
   return (name.trim()[0] || '?').toUpperCase();
 }
 
-function loadPlayers() {
-  try {
-    const raw = localStorage.getItem(STORAGE_PLAYERS);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((p) => typeof p === 'string' && p.trim()) : [];
-  } catch {
-    return [];
-  }
-}
-
-function savePlayers() {
-  try {
-    localStorage.setItem(STORAGE_PLAYERS, JSON.stringify(state.players));
-  } catch {
-    // ignore storage errors
-  }
-}
-
-function loadUsedWords() {
-  try {
-    const raw = localStorage.getItem(STORAGE_USED_WORDS);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveUsedWords() {
-  try {
-    localStorage.setItem(STORAGE_USED_WORDS, JSON.stringify(state.usedWordIndices));
-  } catch {
-    // ignore
-  }
+function persistActiveProfile() {
+  if (!state.activeProfileKey) return;
+  updateProfile(state.activeProfileKey, {
+    players: state.players,
+    impostorCount: state.impostorCount,
+    usedWordIndices: state.usedWordIndices
+  });
 }
 
 function pickRandomWordPair() {
@@ -160,7 +146,7 @@ function pickRandomWordPair() {
   }
   const chosenIdx = available[randomInt(available.length)];
   state.usedWordIndices.push(chosenIdx);
-  saveUsedWords();
+  persistActiveProfile();
   return WORDS[chosenIdx];
 }
 
@@ -174,9 +160,102 @@ function maxImpostorsFor(count) {
   return Math.max(1, Math.floor((count - 1) / 2));
 }
 
+// ==================== LOGIN / PROFILE SCREEN ====================
+function enterProfile(rawName) {
+  const profile = loginProfile(rawName);
+  if (!profile) return;
+
+  state.activeProfileKey = profile.key;
+  state.activeProfileName = profile.name;
+  state.players = [...(profile.players || [])];
+  state.impostorCount = profile.impostorCount || 1;
+  state.usedWordIndices = [...(profile.usedWordIndices || [])];
+
+  elActiveProfileAvatar.textContent = getInitial(profile.name);
+  elActiveProfileAvatar.style.background = getAvatarColor(profile.name);
+  elActiveProfileName.textContent = profile.name;
+
+  renderSetup();
+  showScreen('setup');
+  vibrate(15);
+}
+
+function renderLogin() {
+  const profiles = listProfiles();
+  elProfileCountBadge.textContent = String(profiles.length);
+  elRecentProfilesPanel.classList.toggle('hidden', profiles.length === 0);
+
+  elProfileList.innerHTML = '';
+  profiles.forEach((prof) => {
+    const li = document.createElement('li');
+    li.className = 'profile-item';
+
+    const btnOpen = document.createElement('button');
+    btnOpen.type = 'button';
+    btnOpen.className = 'profile-item-btn';
+
+    const avatar = document.createElement('span');
+    avatar.className = 'avatar-sm';
+    avatar.style.background = getAvatarColor(prof.name);
+    avatar.textContent = getInitial(prof.name);
+
+    const meta = document.createElement('div');
+    meta.className = 'profile-meta';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'profile-meta-name';
+    nameEl.textContent = prof.name;
+
+    const pCount = (prof.players || []).length;
+    const wCount = (prof.usedWordIndices || []).length;
+    const subEl = document.createElement('span');
+    subEl.className = 'profile-meta-sub';
+    subEl.textContent = `${pCount} giocator${pCount === 1 ? 'e' : 'i'} • ${wCount} parol${wCount === 1 ? 'a' : 'e'} usate`;
+
+    meta.append(nameEl, subEl);
+    btnOpen.append(avatar, meta);
+    btnOpen.addEventListener('click', () => enterProfile(prof.name));
+
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'btn-remove';
+    btnDel.setAttribute('aria-label', `Elimina profilo ${prof.name}`);
+    btnDel.textContent = '×';
+    btnDel.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm(`Vuoi eliminare il profilo "${prof.name}" e il suo storico parole?`)) {
+        deleteProfile(prof.key);
+        renderLogin();
+      }
+    });
+
+    li.append(btnOpen, btnDel);
+    elProfileList.appendChild(li);
+  });
+}
+
+elLoginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const raw = elProfileNameInput.value.trim();
+  if (!raw) return;
+  elProfileNameInput.value = '';
+  enterProfile(raw);
+});
+
+elBtnSwitchProfile.addEventListener('click', () => {
+  renderLogin();
+  showScreen('login');
+  vibrate(10);
+});
+
 // ==================== SETUP RENDERING ====================
 function renderSetup() {
-  elWordPoolMeta.textContent = `${WORDS.length.toLocaleString('it-IT')} parole • Tutto generico`;
+  const used = state.usedWordIndices.length;
+  elWordPoolMeta.textContent =
+    used > 0
+      ? `${WORDS.length.toLocaleString('it-IT')} parole • ${used} giocate`
+      : `${WORDS.length.toLocaleString('it-IT')} parole • Tutto generico`;
+
   elPlayerCountBadge.textContent = String(state.players.length);
 
   const maxImp = maxImpostorsFor(state.players.length);
@@ -213,7 +292,7 @@ function renderSetup() {
     btnDel.textContent = '×';
     btnDel.addEventListener('click', () => {
       state.players.splice(idx, 1);
-      savePlayers();
+      persistActiveProfile();
       renderSetup();
     });
 
@@ -231,7 +310,6 @@ elAddPlayerForm.addEventListener('submit', (e) => {
   const raw = elPlayerNameInput.value.trim();
   if (!raw) return;
 
-  // Avoid exact duplicate names (case-insensitive)
   const exists = state.players.some((p) => p.toLowerCase() === raw.toLowerCase());
   if (exists) {
     elPlayerNameInput.value = '';
@@ -243,7 +321,7 @@ elAddPlayerForm.addEventListener('submit', (e) => {
   }
 
   state.players.push(raw);
-  savePlayers();
+  persistActiveProfile();
   elPlayerNameInput.value = '';
   renderSetup();
   vibrate(12);
@@ -252,6 +330,7 @@ elAddPlayerForm.addEventListener('submit', (e) => {
 elBtnImpMinus.addEventListener('click', () => {
   if (state.impostorCount > 1) {
     state.impostorCount--;
+    persistActiveProfile();
     renderSetup();
     vibrate(10);
   }
@@ -261,6 +340,7 @@ elBtnImpPlus.addEventListener('click', () => {
   const maxImp = maxImpostorsFor(state.players.length);
   if (state.impostorCount < maxImp) {
     state.impostorCount++;
+    persistActiveProfile();
     renderSetup();
     vibrate(10);
   }
@@ -275,7 +355,6 @@ function startNewRound() {
   state.currentWord = word;
   state.currentHint = hint;
 
-  // Pick impostor indices without replacement
   const indices = state.players.map((_, i) => i);
   const impostorSet = new Set();
   for (let i = 0; i < state.impostorCount; i++) {
@@ -306,7 +385,6 @@ function renderRevealStep() {
   elRevealAvatar.style.background = getAvatarColor(current.name);
   elRevealPlayerName.textContent = current.name;
 
-  // Reset card visual state
   elSecretCard.classList.remove('is-holding', 'is-civilian', 'is-impostor');
   elSecretCard.classList.add(current.isImpostor ? 'is-impostor' : 'is-civilian');
 
@@ -348,7 +426,6 @@ elSecretCard.addEventListener('pointerleave', endHold);
 elSecretCard.addEventListener('pointercancel', endHold);
 elSecretCard.addEventListener('contextmenu', (e) => e.preventDefault());
 
-// Keyboard accessibility for desktop testing
 elSecretCard.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.code === 'Enter') beginHold(e);
 });
@@ -371,6 +448,7 @@ elBtnNextPlayer.addEventListener('click', () => {
 });
 
 elBtnAbortReveal.addEventListener('click', () => {
+  renderSetup();
   showScreen('setup');
 });
 
@@ -500,7 +578,8 @@ elBtnEditPlayers.addEventListener('click', () => {
 });
 
 // ==================== INIT & SERVICE WORKER ====================
-renderSetup();
+renderLogin();
+showScreen('login');
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
